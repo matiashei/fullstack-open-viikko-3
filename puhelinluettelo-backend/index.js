@@ -43,51 +43,54 @@ app.get('/api/persons', (request, response) => {
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
-    Person.findById(request.params.id).then(person => {
-        if (person) {
-            response.json(person)
-        } else {
-            response.status(404).end()
-        }
-    })
-
-    app.delete('/api/persons/:id', (request, response) => {
-        Person.findByIdAndRemove(request.params.id)
-            .then(() => {
-                response.status(204).end()
-            })
-            .catch(error => next(error))
-    })
+app.get('/api/persons/:id', (request, response, next) => {
+    Person.findById(request.params.id)
+        .then(person => {
+            if (person) {
+                response.json(person)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch(error => next(error))
 })
-    const existingPerson = (name) => {
-        return persons.find(person => person.name === name)
+
+app.delete('/api/persons/:id', (request, response, next) => {
+    Person.findByIdAndRemove(request.params.id)
+        .then(() => {
+            response.status(204).end()
+        })
+        .catch(error => next(error))
+})
+
+const existingPerson = (name) => {
+    return persons.find(person => person.name === name)
+}
+
+app.post('/api/persons', (request, response) => {
+    const body = request.body
+
+    if (!body.name || !body.number) {
+        return response.status(400).json({
+            error: 'name or number missing'
+        })
+    } else if (existingPerson(body.name)) {
+        return response.status(400).json({
+            error: `${body.name} already exists`
+        })
     }
 
-    app.post('/api/persons', (request, response) => {
-        const body = request.body
-
-        if (!body.name || !body.number) {
-            return response.status(400).json({
-                error: 'name or number missing'
-            })
-        } else if (existingPerson(body.name)) {
-            return response.status(400).json({
-                error: `${body.name} already exists`
-            })
-        }
-
-        const person = new Person({
-            name: body.name,
-            number: body.number,
-        })
-
-        person.save().then(savedPerson => {
-            response.json(savedPerson)
-        })
+    const person = new Person({
+        name: body.name,
+        number: body.number,
     })
 
-    const PORT = process.env.PORT
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`)
+    person.save().then(savedPerson => {
+        response.json(savedPerson)
     })
+})
+
+const PORT = process.env.PORT
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+})
