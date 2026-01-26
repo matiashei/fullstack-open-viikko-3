@@ -44,58 +44,50 @@ app.get('/api/persons', (request, response) => {
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = request.params.id
-    const person = persons.find(person => person.id === id)
-
-    if (person) {
-        response.json(person)
-    } else {
-        response.status(404).end()
-    }
-})
-
-app.delete('/api/persons/:id', (request, response) => {
-    const id = request.params.id
-    persons = persons.filter(person => person.id !== id)
-
-    response.status(204).end()
-})
-
-const generateId = () => {
-    const maxId = persons.length > 0
-        ? Math.max(...persons.map(n => Number(n.id)))
-        : 0
-    return String(maxId + 1)
-}
-
-const existingPerson = (name) => {
-    return persons.find(person => person.name === name)
-}
-
-app.post('/api/persons', (request, response) => {
-    const body = request.body
-
-    if (!body.name || !body.number) {
-        return response.status(400).json({
-            error: 'name or number missing'
-        })
-    } else if (existingPerson(body.name)) {
-        return response.status(400).json({
-            error: `${body.name} already exists`
-        })
-    }
-
-    const person = new Person({
-        name: body.name,
-        number: body.number,
+    Person.findById(request.params.id).then(person => {
+        if (person) {
+            response.json(person)
+        } else {
+            response.status(404).end()
+        }
     })
 
-    person.save().then(savedPerson => {
-        response.json(savedPerson)
+    app.delete('/api/persons/:id', (request, response) => {
+        Person.findByIdAndRemove(request.params.id)
+            .then(() => {
+                response.status(204).end()
+            })
+            .catch(error => next(error))
     })
 })
+    const existingPerson = (name) => {
+        return persons.find(person => person.name === name)
+    }
 
-const PORT = process.env.PORT
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`)
-})
+    app.post('/api/persons', (request, response) => {
+        const body = request.body
+
+        if (!body.name || !body.number) {
+            return response.status(400).json({
+                error: 'name or number missing'
+            })
+        } else if (existingPerson(body.name)) {
+            return response.status(400).json({
+                error: `${body.name} already exists`
+            })
+        }
+
+        const person = new Person({
+            name: body.name,
+            number: body.number,
+        })
+
+        person.save().then(savedPerson => {
+            response.json(savedPerson)
+        })
+    })
+
+    const PORT = process.env.PORT
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`)
+    })
