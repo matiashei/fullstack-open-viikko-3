@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import personService from './services/persons'
 import Notification from './components/Notification'
+import { create } from '../../puhelinluettelo-backend/models/person'
 
 const RenderNumbers = ({ personsToShow, removePerson }) => {
   return (
@@ -71,11 +72,17 @@ const App = () => {
     } else {
       personService
         .create(personObject)
-        .then(response => {
-          setPersons(persons.concat(response.data))
+        .then(createdPerson => {
+          setPersons(persons.concat(createdPerson))
           setNewName('')
           setNewNumber('')
           setNotificationMessage(`Added ${personObject.name}`)
+          setTimeout(() => {
+            setNotificationMessage(null)
+          }, 5000)
+        })
+        .catch(error => {
+          setNotificationMessage(error.response.data.error)
           setTimeout(() => {
             setNotificationMessage(null)
           }, 5000)
